@@ -135,7 +135,7 @@ flowchart LR
         CORE[Процессинговый центр<br/>Mastercard/Visa/Мир<br/>~700 tx/с]
         DBO[Каналы ДБО<br/>Мобильный банк, Web<br/>~200 tx/с]
         ATM[ATM-сеть<br/>Банкоматы, терминалы<br/>~100 tx/с]
-        ABS[АБС (Core Banking)<br/>Выгрузки счетов<br/>batch раз в сутки]
+        ABS[АБС - Core Banking<br/>Выгрузки счетов<br/>batch раз в сутки]
         DOCS[Сканы договоров<br/>и чеков<br/>PDF / JPG]
     end
 
@@ -226,5 +226,3 @@ flowchart LR
     style CONS fill:#f8bbd0
     style SEC fill:#ffcdd2
 ```
-
-### Шаг 5. Описание компонентов 
