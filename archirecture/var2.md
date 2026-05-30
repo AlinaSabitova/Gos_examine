@@ -132,11 +132,11 @@ Batch-выгрузки (АБС, архивы):
 ```mermaid
 flowchart LR
     subgraph SRC["1 — ИСТОЧНИКИ"]
-        CORE[Процессинговый центр<br/>Mastercard/Visa/Мир<br/>~700 tx/с]
-        DBO[Каналы ДБО<br/>Мобильный банк, Web<br/>~200 tx/с]
-        ATM[ATM-сеть<br/>Банкоматы, терминалы<br/>~100 tx/с]
-        ABS[АБС - Core Banking<br/>Выгрузки счетов<br/>batch раз в сутки]
-        DOCS[Сканы договоров<br/>и чеков<br/>PDF / JPG]
+        TERM[Терминалы в магазинах<br/>~700 транзакций/с<br/>ISO 8583 / JSON]
+        MOB[Мобильный банк<br/>~200 транзакций/с<br/>JSON]
+        ATM[Банкоматы<br/>~100 транзакций/с<br/>XML / JSON]
+        ABS[АБС - ядро банка<br/>Кредитные истории, счета<br/>Пакетная, раз в сутки]
+        DOCS[Сканы договоров и чеков<br/>Офисы банка<br/>PDF / JPG]
     end
 
     subgraph ING["2 — INGEST"]
@@ -162,10 +162,8 @@ flowchart LR
     end
 
     subgraph CONS["6 — ПОТРЕБИТЕЛИ"]
-        FRAUD[АРМ фрод-мониторинга<br/>Карта инцидентов,<br/>расследования]
-        BI[Superset / Metabase<br/>Дашборды]
+        FRAUD[АРМ фрод-мониторинга<br/>Расследование инцидентов]
         API[REST API<br/>Ответ эквайрингу:<br/>APPROVE / DECLINE]
-        DS[Data Scientists<br/>JupyterHub]
         CBR[Отчётность ЦБ<br/>Форма 0409135 и др.]
     end
 
@@ -178,8 +176,8 @@ flowchart LR
         AIRFLOW[Apache Airflow<br/>Оркестрация ETL]
     end
 
-    CORE --> NIFI
-    DBO --> NIFI
+    TERM --> NIFI
+    MOB --> NIFI
     ATM --> NIFI
     ABS --> NIFI
     DOCS --> NIFI
@@ -204,10 +202,7 @@ flowchart LR
     REDIS --> FLINK
 
     CH --> FRAUD
-    CH --> BI
-    HIVE --> DS
     HIVE --> CBR
-    MINIO --> DS
 
     KERB -.-> KAFKA
     KERB -.-> HDFS
