@@ -221,3 +221,6 @@ flowchart LR
     style CONS fill:#f8bbd0
     style SEC fill:#ffcdd2
 ```
+
+### Шаг 5. Описание компонентов 
+
