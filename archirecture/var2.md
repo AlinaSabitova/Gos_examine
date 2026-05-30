@@ -126,3 +126,105 @@ Batch-выгрузки (АБС, архивы):
 | **Токенизация в NiFi** | Реальный номер карты заменяется на вымышленный идентификатор сразу при входе в систему. Даже при полной утечке данных из аналитического контура номера карт не будут скомпрометированы |
 | **Аудит доступа** | Каждый факт обращения к конфиденциальным данным записывается в журнал. Это требование закона: в случае инцидента можно установить, кто и когда смотрел информацию |
 | **Размещение в РФ** | Все серверы основного и резервного центров обработки находятся на территории России. Журналы аудита хранятся не менее 5 лет |
+
+## Создание схемы решения (Mermaid)
+
+```mermaid
+flowchart LR
+    subgraph SRC["1 — ИСТОЧНИКИ"]
+        CORE[Процессинговый центр<br/>Mastercard/Visa/Мир<br/>~700 tx/с]
+        DBO[Каналы ДБО<br/>Мобильный банк, Web<br/>~200 tx/с]
+        ATM[ATM-сеть<br/>Банкоматы, терминалы<br/>~100 tx/с]
+        ABS[АБС (Core Banking)<br/>Выгрузки счетов<br/>batch раз в сутки]
+        DOCS[Сканы договоров<br/>и чеков<br/>PDF / JPG]
+    end
+
+    subgraph ING["2 — INGEST"]
+        NIFI[Apache NiFi<br/>Сбор, валидация,<br/>токенизация PAN]
+        KAFKA[Apache Kafka<br/>Шина событий<br/>топики: tx.raw, tx.enriched]
+    end
+
+    subgraph REAL["3 — REAL-TIME LAYER (антифрод, < 1 с)"]
+        FLINK[Apache Flink<br/>CEP-правила,<br/>поиск паттернов]
+        REDIS[(Redis<br/>Горячий кэш:<br/>стоп-листы, лимиты,<br/>гео-профили)]
+    end
+
+    subgraph BATCH["4 — BATCH & ML LAYER"]
+        HDFS[(HDFS<br/>Raw-зона<br/>реплика = 3)]
+        SPARK[Spark / PySpark<br/>ETL + Feature Engineering]
+        MLFLOW[MLflow<br/>Версионирование моделей]
+    end
+
+    subgraph SERVE["5 — SERVING LAYER"]
+        HIVE[(Hive / Iceberg<br/>Кредитные витрины,<br/>отчётность ЦБ)]
+        CH[(ClickHouse<br/>Мониторинг фрода,<br/>оперативные дашборды)]
+        MINIO[(MinIO / S3<br/>Сканы договоров,<br/>фото чеков)]
+    end
+
+    subgraph CONS["6 — ПОТРЕБИТЕЛИ"]
+        FRAUD[АРМ фрод-мониторинга<br/>Карта инцидентов,<br/>расследования]
+        BI[Superset / Metabase<br/>Дашборды]
+        API[REST API<br/>Ответ эквайрингу:<br/>APPROVE / DECLINE]
+        DS[Data Scientists<br/>JupyterHub]
+        CBR[Отчётность ЦБ<br/>Форма 0409135 и др.]
+    end
+
+    subgraph SEC["БЕЗОПАСНОСТЬ И УПРАВЛЕНИЕ"]
+        KERB[Kerberos<br/>Аутентификация]
+        RANGER[Apache Ranger<br/>RBAC + аудит]
+        MTLS[mTLS<br/>Шифрование in-transit]
+        TDE[HDFS TDE<br/>Шифрование at-rest]
+        ZK[ZooKeeper<br/>Координация]
+        AIRFLOW[Apache Airflow<br/>Оркестрация ETL]
+    end
+
+    CORE --> NIFI
+    DBO --> NIFI
+    ATM --> NIFI
+    ABS --> NIFI
+    DOCS --> NIFI
+
+    NIFI --> KAFKA
+    NIFI --> MINIO
+
+    KAFKA --> FLINK
+    KAFKA --> HDFS
+
+    FLINK --> REDIS
+    FLINK --> API
+    FLINK --> CH
+
+    HDFS --> SPARK
+    SPARK --> MLFLOW
+    SPARK --> HIVE
+    HIVE --> CH
+
+    MLFLOW -.-> FLINK
+
+    REDIS --> FLINK
+
+    CH --> FRAUD
+    CH --> BI
+    HIVE --> DS
+    HIVE --> CBR
+    MINIO --> DS
+
+    KERB -.-> KAFKA
+    KERB -.-> HDFS
+    RANGER -.-> HIVE
+    RANGER -.-> HDFS
+    MTLS -.-> KAFKA
+    MTLS -.-> FLINK
+    AIRFLOW -.-> SPARK
+    ZK -.-> KAFKA
+
+    style SRC fill:#e3f2fd
+    style ING fill:#fff9c4
+    style REAL fill:#ff8a80
+    style BATCH fill:#c8e6c9
+    style SERVE fill:#d1c4e9
+    style CONS fill:#f8bbd0
+    style SEC fill:#ffcdd2
+```
+
+### Шаг 5. Описание компонентов 
