@@ -162,17 +162,19 @@ flowchart LR
     end
 
     subgraph CONS["6 — ПОТРЕБИТЕЛИ"]
-        FRAUD[Сотрудники безопасности - фрод-мониторинг<br/>Расследование инцидентов]
+        FRAUD[АРМ фрод-мониторинга<br/>Расследование инцидентов]
         API[REST API<br/>Ответ эквайрингу:<br/>APPROVE / DECLINE]
         CBR[Отчётность ЦБ<br/>Форма 0409135 и др.]
     end
 
-    subgraph SEC["БЕЗОПАСНОСТЬ И УПРАВЛЕНИЕ"]
+    subgraph SEC["7 — БЕЗОПАСНОСТЬ И УПРАВЛЕНИЕ"]
         KERB[Kerberos<br/>Аутентификация]
         RANGER[Apache Ranger<br/>RBAC + аудит]
         MTLS[mTLS<br/>Шифрование in-transit]
         TDE[HDFS TDE<br/>Шифрование at-rest]
         AIRFLOW[Apache Airflow<br/>Оркестрация ETL]
+        PROM[Prometheus<br/>Сбор метрик кластера]
+        GRAF[Grafana<br/>Дашборды состояния<br/>сервисов и алерты]
     end
 
     TERM --> NIFI
@@ -202,6 +204,13 @@ flowchart LR
 
     CH --> FRAUD
     HIVE --> CBR
+
+    PROM -.-> KAFKA
+    PROM -.-> FLINK
+    PROM -.-> HDFS
+    PROM -.-> REDIS
+    PROM -.-> CH
+    GRAF -.-> PROM
 
     KERB -.-> KAFKA
     KERB -.-> HDFS
