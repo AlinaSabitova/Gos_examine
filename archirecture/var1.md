@@ -132,8 +132,9 @@
 ## Схема архитектуры
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph SRC["1. ИСТОЧНИКИ"]
+        direction LR
         WEB[Веб-витрина + мобильное приложение<br/>~4 000 событий/с]
         PAY[Платёжный шлюз<br/>~1 000 транзакций/с]
         CHAT[Чат-боты и поддержка<br/>~200 событий/с]
@@ -142,30 +143,31 @@ flowchart LR
     end
 
     subgraph ING["2. INGEST"]
-        KAFKA[Apache Kafka<br/>топики: pageviews, orders, chats]
+        KAFKA[Apache Kafka<br/>pageviews / orders / chats]
     end
 
     subgraph PROC["3. ОБРАБОТКА"]
         SSS[Spark Structured Streaming<br/>Обогащение, профили, фрод]
         BATCH[Spark Batch + MLlib<br/>Обучение моделей спроса]
-        MLFLOW[MLflow<br/>Версионирование моделей]
+        MLFLOW[MLflow<br/>Версионирование]
     end
 
     subgraph STORE["4. ХРАНЕНИЕ"]
         HDFS[(HDFS Data Lake<br/>сырые логи, история)]
-        MINIO[(MinIO / S3<br/>изображения товаров)]
-        CH[(ClickHouse<br/>оперативные дашборды)]
+        MINIO[(MinIO<br/>изображения)]
+        CH[(ClickHouse<br/>дашборды)]
         HIVE[(Hive / Iceberg<br/>SQL-витрины)]
-        REDIS[(Redis<br/>кэш рекомендаций)]
+        REDIS[(Redis<br/>кэш)]
     end
 
     subgraph CONS["5. ПОТРЕБИТЕЛИ"]
-        SITE[Витрина сайта<br/>Рекомендации, ETA]
-        DASH[Дашборды аналитиков<br/>Воронка, конверсия]
-        BUYER[Отдел закупок<br/>Заказы поставщикам]
+        SITE[Витрина сайта]
+        DASH[Аналитики]
+        BUYER[Отдел закупок]
     end
 
     subgraph SEC["6. БЕЗОПАСНОСТЬ И УПРАВЛЕНИЕ"]
+        direction LR
         KERB[Kerberos]
         RANGER[Apache Ranger]
         TLS[mTLS]
@@ -189,10 +191,9 @@ flowchart LR
     HDFS --> BATCH
     BATCH --> MLFLOW
     BATCH --> HIVE
+    HIVE --> CH
 
     MLFLOW -.-> SSS
-
-    HIVE --> CH
 
     REDIS --> SITE
     CH --> DASH
@@ -200,20 +201,15 @@ flowchart LR
     HIVE --> BUYER
     MINIO --> SITE
 
-    KERB -.-> HDFS
-    KERB -.-> KAFKA
-    RANGER -.-> HIVE
-    RANGER -.-> HDFS
-    TLS -.-> KAFKA
-    TLS -.-> SSS
-    TDE -.-> HDFS
-    AIRFLOW -.-> BATCH
-    AIRFLOW -.-> HIVE
+    SEC -.-> SRC
+    SEC -.-> ING
+    SEC -.-> PROC
+    SEC -.-> STORE
 
-    style SRC fill:#e3f2fd
-    style ING fill:#fff9c4
-    style PROC fill:#ff8a80
-    style STORE fill:#c8e6c9
-    style CONS fill:#d1c4e9
-    style SEC fill:#ffcdd2
+    style SRC fill:#e3f2fd,stroke:#1565c0
+    style ING fill:#fff9c4,stroke:#f9a825
+    style PROC fill:#ff8a80,stroke:#c62828
+    style STORE fill:#c8e6c9,stroke:#2e7d32
+    style CONS fill:#d1c4e9,stroke:#4527a0
+    style SEC fill:#ffcdd2,stroke:#b71c1c
 ```
